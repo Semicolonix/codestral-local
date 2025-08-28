@@ -1,12 +1,12 @@
-FROM pytorch/pytorch:2.8.0-cuda12.9-devel
+FROM pytorch/pytorch:latest-devel-cu12.1
 
 ARG HF_TOKEN
 ENV HF_TOKEN=$HF_TOKEN
 
-RUN apt-get update && apt-get install -y \
-    python3-pip \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y python3-pip git && rm -rf /var/lib/apt/lists/*
+
+# mamba-ssm ビルドに必要
+RUN pip install numpy
 
 RUN pip install --upgrade pip
 RUN pip install \
