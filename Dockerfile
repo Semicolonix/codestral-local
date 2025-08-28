@@ -1,19 +1,32 @@
-FROM pytorch/pytorch:latest-devel-cu12.1
+# runtime イメージを使用（nvcc なし）
+FROM pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime
 
+# Hugging Face Token をビルド時に受け取る
 ARG HF_TOKEN
 ENV HF_TOKEN=$HF_TOKEN
 
-RUN apt-get update && apt-get install -y python3-pip git && rm -rf /var/lib/apt/lists/*
+# 必要なシステムパッケージをインストール
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
-# mamba-ssm ビルドに必要
+# pip を最新化
+RUN pip install --upgrade pip
+
+# 🔑 重要：numpy を先にインストール（mamba-ssm の依存関係のため）
 RUN pip install numpy
 
-RUN pip install --upgrade pip
+# mamba-ssm の事前ビルド済みwheelを優先してインストール
+# CUDA 12.1 用のバイナリが CUDA 12.9 でも動作します
+RUN pip install mamba-ssm[causal-conv1d]>=2.2.0 -f https://smittytone.net/mamba-wheels/
+
+# 他のパッケージをインストール
 RUN pip install \
     transformers accelerate \
     fastapi uvicorn gradio \
-    mamba-ssm causal-conv1d>=1.2.0 sentencepiece \
-    psutil requests torch
+    sentencepiece \
+    psutil requests
 
 WORKDIR /app
 COPY run.py /app/run.py
