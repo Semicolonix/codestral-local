@@ -1,4 +1,3 @@
-# run.py - Codestral-Mamba 1ファイル起動スクリプト
 import os
 import time
 import threading
@@ -9,12 +8,11 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 import uvicorn
 import gradio as gr
 
-# 設定
 MODEL_ID = "mistralai/codestral-mamba-7b-v0.1"
 API_HOST = "127.0.0.1"
 API_PORT = 8000
 UI_PORT = 7860
-HF_TOKEN = os.getenv("HF_TOKEN", None)  # Docker実行時に --build-arg HF_TOKEN=xxx で渡せる
+HF_TOKEN = os.getenv("HF_TOKEN")
 
 print(f"⏬ モデルをロード中: {MODEL_ID}")
 
@@ -26,12 +24,11 @@ try:
         torch_dtype="auto",
         token=HF_TOKEN
     )
-    print("✅ モデルのロード完了")
+    print("✅ ロード完了")
 except Exception as e:
-    print(f"❌ モデルロード失敗: {e}")
+    print(f"❌ 失敗: {e}")
     exit(1)
 
-# FastAPIサーバー
 app = FastAPI()
 
 class GenerateRequest(BaseModel):
@@ -57,16 +54,15 @@ def generate(req: GenerateRequest):
 def start_api():
     uvicorn.run(app, host=API_HOST, port=API_PORT, log_level="warning")
 
-# Gradio UI
 def chat(message, history):
     try:
         res = requests.post(f"http://{API_HOST}:{API_PORT}/generate", json={"prompt": message})
         return res.json().get("response", "エラー")
     except:
-        return "APIに接続できません"
+        return "接続エラー"
 
 def start_ui():
-    time.sleep(5)  # API待機
+    time.sleep(5)
     demo = gr.ChatInterface(
         fn=chat,
         title="🧠 Codestral-Mamba - ローカルAIコーダー",
@@ -74,7 +70,7 @@ def start_ui():
         examples=[
             "PythonでCSV読み込み関数を書いて",
             "Reactのカウンターを作って",
-            "このコードのバグを直して: def add(a, b): return a - b"
+            "def add(a, b): return a - b にバグを直して"
         ]
     )
     demo.launch(server_name="0.0.0.0", server_port=UI_PORT, share=False)
